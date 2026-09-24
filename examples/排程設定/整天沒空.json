@@ -1,0 +1,4 @@
+{
+ "_readme": "Hand-written days off. This always wins over anything inferred from a calendar. Use cap to shrink a day instead of clearing it.",
+ "days": {}
+}

@@ -1,0 +1,97 @@
+/* 四頁共用的第一排導覽列(2026-09-08)。⛔ 唯一正本,⛔ 不要在各頁的 CSS 裡再寫一份。
+
+   規範:第一排只放分頁、位置永遠固定、當前頁亮起來不拿掉;
+        這一頁自己的工具全部下移到第二排。由來見 nav.js 檔頭。
+
+   ⚠️ 刻意不宣告 color-scheme —— 各頁自己已經宣告了,在這裡再宣告會蓋掉它們。 */
+
+:root {
+  --nav-h: 42px;          /* 各頁算畫布高度時扣這個,⛔ 不要在別處寫死 42 */
+  --nav-bg: #12151c;
+  --nav-line: #2b3140;
+  --nav-text: #c3cad6;
+  --nav-hot: #6cc0ff;
+}
+
+#scnav {
+  height: var(--nav-h);
+  flex: none;                       /* flex column 版面(如 /day)不准壓縮它 */
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 11px;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-line);
+  font: 13px/1 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+  user-select: none;
+}
+
+#scnav .np {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 12px; border-radius: 7px;
+  color: var(--nav-text); text-decoration: none; white-space: nowrap;
+  border: 1px solid transparent;
+}
+#scnav .np:hover { background: #232937; color: #fff; }
+#scnav .np .ni { font-size: 14px; }
+
+/* 當前頁:亮起來,⛔ 不是移除 */
+#scnav .np.cur {
+  background: #1d3350;
+  color: #fff; font-weight: 700;
+  border-color: var(--nav-hot);
+  cursor: default;
+}
+
+/* 狀態訊息固定在第一排最右邊 —— 四頁一致 */
+#scnav #status {
+  margin-left: auto; font-size: 12px; color: #8d97a6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#scnav #status.dirty { color: #ffd43b; }
+#scnav #status.saved { color: #69db7c; }
+
+@media (max-width: 620px) {
+  #scnav .np { padding: 0 9px; }
+  #scnav .np .ni { font-size: 13px; }
+}
+
+/* ── 右下角「＋」隨手記(2026-09-17)── 四頁同一個位置 */
+#qa-fab {
+  position: fixed; right: 18px; bottom: 18px; z-index: 900;
+  width: 48px; height: 48px; border-radius: 50%; border: none;
+  background: #3b82f6; color: #fff; font-size: 28px; line-height: 48px;
+  text-align: center; cursor: pointer; padding: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .45);
+}
+#qa-fab:hover { background: #2563eb; }
+#qa-fab.on { background: #1e40af; }
+#qa-dlg {
+  position: fixed; right: 78px; bottom: 18px; z-index: 901;
+  width: min(360px, calc(100vw - 100px));
+  background: #1f2430; color: #e8eaed;
+  border: 1px solid #353c4b; border-radius: 10px; padding: 12px 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  font: 13px/1.5 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+}
+#qa-dlg[hidden] { display: none; }
+#qa-dlg .qa-h { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+#qa-dlg input[type="text"] {
+  width: 100%; font: inherit; font-size: 14px; padding: 6px 9px; border-radius: 6px;
+  border: 1px solid #6cc0ff; background: #151922; color: #e8eaed; outline: none;
+}
+#qa-dlg .qa-row { display: flex; align-items: center; gap: 7px; margin-top: 8px; }
+#qa-dlg .qa-l { color: #a9b2bf; min-width: 40px; }
+#qa-dlg select {
+  font: inherit; padding: 3px 6px; border-radius: 6px; max-width: 220px;
+  border: 1px solid #353c4b; background: #151922; color: #e8eaed;
+}
+#qa-go {
+  margin-left: auto; font: inherit; padding: 4px 13px; border-radius: 6px; cursor: pointer;
+  border: 1px solid #4ee0b5; background: transparent; color: #4ee0b5;
+}
+#qa-go:disabled { opacity: .5; cursor: wait; }
+#qa-msg { margin-top: 8px; min-height: 1em; color: #a9b2bf; }
+#qa-msg.ok { color: #4ee0b5; }
+#qa-msg.err { color: #ff8f8f; }
+@media (max-width: 620px) {
+  #qa-dlg { left: 12px; right: 12px; width: auto; bottom: 78px; }
+}

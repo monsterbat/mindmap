@@ -1,0 +1,17 @@
+{
+ "_readme": "Reusable blocks you drag onto a day: meals, commute, exercise.",
+ "templates": [
+  {
+   "name": "Lunch",
+   "min": 60
+  },
+  {
+   "name": "Exercise",
+   "min": 45
+  },
+  {
+   "name": "Commute",
+   "min": 30
+  }
+ ]
+}

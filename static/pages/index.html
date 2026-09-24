@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🧠 心智圖</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+<link rel="stylesheet" href="/static/vendor/MindElixir.css">
+<link rel="stylesheet" href="/static/vendor/node-menu.css">
+<link rel="stylesheet" href="/static/css/nav.css">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<nav id="scnav"></nav>
+
+<header id="toolbar">
+  <select id="map-select" title="選一張圖"></select>
+  <button id="btn-new" title="建一張新圖">➕ 新圖</button>
+  <span id="layers-wrap">
+    <button id="btn-layers" title="圖層開關：待辦／已完成／規則SOP／設施／AI圈圈">🗂 圖層</button>
+    <div id="layer-panel" hidden></div>
+  </span>
+  <span class="sep"></span>
+  <button id="btn-detail" title="開/關右側詳情面板">📝 詳情</button>
+  <button id="btn-style-mode" title="切換外觀編輯：開啟後點節點才會跳出顏色/字級面板">🎨 外觀</button>
+  <button id="btn-arrows" title="關聯線顯示方式：全開／聚焦／全關">🔗 線</button>
+  <button id="btn-ai-next" title="跳到下一個 AI 改過的節點（在詳情面板拆圈圈）" hidden>⭕</button>
+  <span id="hint" title="Tab＝子節點 · Shift+Tab＝待辦 · 雙擊＝改字 · ⌘Z＝復原（⇧⌘Z 重做，重新整理後就沒了）· 右鍵＝連接/摘要 · ⌘F＝搜尋">Tab＝子節點 · <b>Shift+Tab＝待辦</b> · 雙擊＝改字 · <b>⌘Z＝復原</b></span>
+  <span id="search-wrap">
+    <input id="search-box" type="search" placeholder="🔍 搜尋節點（⌘F）" autocomplete="off">
+    <div id="search-list" hidden></div>
+  </span>
+  <button id="btn-save" title="Cmd+S">儲存</button>
+</header>
+<div id="banner" hidden>
+  <span id="banner-text"></span>
+  <button id="btn-reload">載入最新（丟掉本地改動）</button>
+  <button id="btn-force">強制覆蓋</button>
+</div>
+<div id="update-bar" hidden>
+  <span>🔄 程式有新版了 —— 你這一頁還是舊的，新功能不會出現。</span>
+  <button id="btn-update">存檔並重新整理</button>
+</div>
+<div id="workarea">
+  <div id="map"></div>
+  <aside id="drawer">
+    <div id="drawer-head">
+      <span id="drawer-title">（點一個節點看它的詳情）</span>
+      <button id="drawer-close" title="關閉">✕</button>
+    </div>
+    <div class="drawer-field">
+      <span title="狀態會寫進標題前面的圖示；等級（P1–P4）會變成標籤。⛔ 等級只給待辦，項目不掛">這個節點本身<small id="self-hint">狀態＋等級＋標籤</small></span>
+      <div id="chips-status" class="chip-row"></div>
+      <div id="chips-priority" class="chip-row"></div>
+      <div id="tag-editor">
+        <div id="tag-list" class="chip-row"></div>
+        <input id="tag-input" type="text" placeholder="加自由標籤">
+      </div>
+    </div>
+    <div class="drawer-field">
+      <span title="⛔ 沒有明確死線就別填，不要編日期。剩 3 天內整個節點會亮紅框，7 天內亮橘框">⏰ 截止日<small>剩 7 天亮橘框、3 天亮紅框</small></span>
+      <div class="date-row">
+        <input id="detail-due" type="date">
+        <button id="due-clear" type="button" title="清掉截止日">清除</button>
+      </div>
+    </div>
+    <div class="drawer-field">
+      <span title="要等某件事發生之後才做得了的，填這裡。排程不會把它排到這天之前 —— 例：合約到期 8/13 才能去機關窗口、款項 8/31 入帳才對得了帳">🚧 不能早於<small>要等別的事發生才做得了</small></span>
+      <div class="date-row">
+        <input id="detail-earliest" type="date">
+        <button id="earliest-clear" type="button" title="拿掉這個限制">清除</button>
+      </div>
+    </div>
+    <div class="drawer-field">
+      <span title="排程與甘特圖的地基。一天以你的實際容量 10 小時計、一週以 5 個工作天計。窗口＝條件不成立就做不了的事，排程會避開">⏱ 要花多久 ＆ 📍 只能在哪做<small>從 1 小時到 1 週</small></span>
+      <div id="chips-effort" class="chip-row"></div>
+      <input id="window-input" type="text" placeholder="📍 例：人在現場時">
+    </div>
+    <details id="drawer-more">
+      <summary>⚙️ 進階：專案資料夾 · 連到另一張圖</summary>
+      <div class="drawer-field">
+        <span title="設了之後，圖上會顯示這個專案還有幾件沒做。即時去讀那個資料夾的 TODO.md，不寫進圖裡">📁 對應的專案資料夾<small>圖上會顯示它還有幾件沒做</small></span>
+        <input id="src-input" type="text" placeholder="例：Program/voice_to_text" list="src-list">
+        <datalist id="src-list"></datalist>
+          <div id="src-status"></div>
+      </div>
+      <div class="drawer-field">
+        <span title="設了之後，點節點上的「開啟 ↗」就跳過去；或先選起來再點一下節點">↗ 連到另一張圖<small>點節點上的「開啟 ↗」跳過去</small></span>
+        <select id="link-select"></select>
+      </div>
+    </details>
+    <div class="drawer-field" id="rel-field" hidden>
+      <span title="點名字＝跳過去 · 文字可直接改 · ⇅＝調轉方向 · ⇄＝改成雙向">🔗 關聯<small>點名字跳過去</small></span>
+      <div id="rel-list"></div>
+    </div>
+    <label class="drawer-field">
+      <span title="這是什麼、為什麼這樣定。給你自己也給 AI 當參考。⛔ 只寫現況——句子裡有「還沒／未來要／下一步」就該拉成待辦節點">📖 說明<small>只寫現況；要做的事拉成待辦</small></span>
+      <textarea id="detail-explain"></textarea>
+    </label>
+    <div class="drawer-field">
+      <span title="結構＝由哪些部分組成（不掛狀態也不掛等級）；待辦＝有事情要做（藍）；規則SOP＝指向正本檔的路標（紫）；設施＝機器/系統架構（綠）；工具＝skill 的路標（黃）。後四種都能用圖層整批開關">☑ 這個節點是什麼<small>滑過來看各是什麼</small></span>
+      <div id="chips-kind" class="chip-row"></div>
+      <button id="todo-add" title="在這個節點底下加一條待辦（快捷鍵 Shift+Tab）">＋ 加一條待辦（Shift+Tab）</button>
+    </div>
+    <div id="drawer-ai" hidden></div>
+    <div id="drawer-rollup" hidden></div>
+    <div id="drawer-suggest" hidden></div>
+    <div id="drawer-foot">
+      <span id="drawer-hint">寫完自動存檔</span>
+      <button id="detail-clear" title="把這個節點的說明與待辦都刪掉">清空詳情</button>
+    </div>
+  </aside>
+</div>
+<script src="/static/vendor/MindElixir.iife.js"></script>
+<script src="/static/vendor/node-menu.umd.js"></script>
+<script src="/static/js/config.js"></script>
+<script src="/static/js/nav.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

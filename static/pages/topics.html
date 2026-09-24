@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>✅ 待辦事項</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✅</text></svg>">
+<link rel="stylesheet" href="/static/css/nav.css">
+<link rel="stylesheet" href="/static/css/topics.css">
+</head>
+<body>
+<nav id="scnav"></nav>
+
+<header id="bar">
+  <select id="domain"><option value="">全部領域</option></select>
+  <label class="chk"><input type="checkbox" id="chk-open" checked> 只看沒做完的</label>
+  <span class="sep"></span>
+  <button id="expand-all" class="mini" type="button">全部展開</button>
+  <button id="collapse-all" class="mini" type="button">全部收起</button>
+  <button id="reset-order" class="mini" type="button" title="清掉你拖過的順序，改回「等級高的在前」">↺ 順序改回自動</button>
+  <input id="q" type="search" placeholder="🔍 找事情" autocomplete="off">
+</header>
+
+<main id="wrap">
+  <section id="topics"></section>
+  <p id="empty" hidden>沒有符合的主題。</p>
+</main>
+
+<div id="toast" hidden></div>
+
+<script src="/static/js/config.js"></script>
+<script src="/static/js/nav.js"></script>
+<script src="/static/js/topics.js"></script>
+</body>
+</html>

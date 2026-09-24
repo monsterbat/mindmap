@@ -1,0 +1,306 @@
+{
+ "nodeData": {
+  "id": "root",
+  "topic": "🌐 Example overview",
+  "expanded": true,
+  "children": [
+   {
+    "id": "stage",
+    "topic": "🎯 What I am pushing on right now",
+    "kind": "項目",
+    "expanded": true,
+    "children": [
+     {
+      "id": "stage-short",
+      "topic": "Short term: ship the first version",
+      "kind": "項目",
+      "detail": {
+       "explain": "Acceptance: a stranger can clone the repo and see all four views work."
+      }
+     },
+     {
+      "id": "stage-mid",
+      "topic": "Mid term: use it daily for a month",
+      "kind": "項目",
+      "detail": {
+       "explain": "Acceptance: thirty consecutive days with at least one planned block."
+      }
+     },
+     {
+      "id": "stage-long",
+      "topic": "Long term: stop keeping a second list",
+      "kind": "項目",
+      "detail": {
+       "explain": "Acceptance: no task exists in a notes file that is not on this map."
+      }
+     }
+    ]
+   },
+   {
+    "id": "dom-work",
+    "topic": "💼 Work",
+    "kind": "項目",
+    "expanded": true,
+    "children": [
+     {
+      "id": "w-1",
+      "topic": "⏳ Draft the Q4 proposal",
+      "todo": true,
+      "tags": [
+       "P1"
+      ],
+      "detail": {
+       "explain": "Important and urgent: the client review is a fixed external date, so this one cannot be pushed. Everything else in this domain waits for it.",
+       "due": "2026-09-26",
+       "hardDue": true,
+       "planned": [
+        {
+         "uid": "ex19",
+         "at": "2026-09-24T09:00",
+         "min": 120
+        },
+        {
+         "uid": "ex29",
+         "at": "2026-09-25T09:00",
+         "min": 60
+        }
+       ]
+      }
+     },
+     {
+      "id": "w-2",
+      "topic": "🔜 Rewrite the onboarding doc",
+      "todo": true,
+      "tags": [
+       "P2"
+      ],
+      "detail": {
+       "explain": "Important, not urgent. No deadline on purpose: a wished-for date would show up as a red overdue line and train the reader to ignore red.",
+       "planned": [
+        {
+         "uid": "ex410",
+         "at": "2026-09-27T10:00",
+         "min": 60
+        }
+       ]
+      }
+     },
+     {
+      "id": "w-3",
+      "topic": "⏸️ Renew the team licence",
+      "todo": true,
+      "tags": [
+       "P3"
+      ],
+      "detail": {
+       "explain": "Waiting on someone else. It leaves the todo list and lives in the 'waiting' tab until the condition is met.",
+       "until": "finance approves the budget"
+      }
+     },
+     {
+      "id": "w-4",
+      "topic": "✅ Ship the release notes",
+      "todo": true,
+      "tags": [
+       "P2"
+      ],
+      "detail": {
+       "explain": "Done items stay visible for seven days, then a nightly job files them into the completion log and removes them from the map.",
+       "doneOn": "2026-09-21"
+      }
+     }
+    ]
+   },
+   {
+    "id": "dom-study",
+    "topic": "📚 Study",
+    "kind": "項目",
+    "expanded": true,
+    "children": [
+     {
+      "id": "s-1",
+      "topic": "⏳ Finish chapter 4 exercises",
+      "todo": true,
+      "tags": [
+       "P2"
+      ],
+      "detail": {
+       "explain": "Sits in the evening capacity block, which the weekly planner keeps separate from daytime work.",
+       "planned": [
+        {
+         "uid": "ex119",
+         "at": "2026-09-24T19:00",
+         "min": 60
+        },
+        {
+         "uid": "ex319",
+         "at": "2026-09-26T19:00",
+         "min": 60
+        }
+       ]
+      }
+     },
+     {
+      "id": "s-2",
+      "topic": "🔁 Weekly review",
+      "todo": true,
+      "tags": [
+       "P3"
+      ],
+      "detail": {
+       "explain": "Repeating item. Ticking it does not archive it; it rolls forward to the next period, so the reminder never disappears.",
+       "repeat": "每週"
+      }
+     },
+     {
+      "id": "s-duty",
+      "topic": "♾️ Keep reading, 30 min a day",
+      "kind": "職責",
+      "detail": {
+       "explain": "A standing duty, not a task. Ticking a thing that is never finished is meaningless, so these are drawn as reusable blocks instead of checkboxes.",
+       "duty": true,
+       "dutyMin": 30
+      }
+     }
+    ]
+   },
+   {
+    "id": "dom-home",
+    "topic": "🏠 Home",
+    "kind": "項目",
+    "expanded": true,
+    "children": [
+     {
+      "id": "h-1",
+      "topic": "⏳ Book the annual health check",
+      "todo": true,
+      "tags": [
+       "P2"
+      ],
+      "detail": {
+       "explain": "Cannot start before the new policy year opens, so it carries an earliest-start date rather than a deadline.",
+       "earliest": "2026-10-07"
+      }
+     },
+     {
+      "id": "h-2",
+      "topic": "🔜 Replace the water filter",
+      "todo": true,
+      "tags": [
+       "P4"
+      ],
+      "detail": {
+       "explain": "Neither important nor urgent. Kept on the map so it is not forgotten, but it never competes for a planned slot.",
+       "planned": [
+        {
+         "uid": "ex614",
+         "at": "2026-09-29T14:00",
+         "min": 60
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "id": "dom-side",
+    "topic": "🧪 Side Project",
+    "kind": "項目",
+    "expanded": true,
+    "children": [
+     {
+      "id": "sp-1",
+      "topic": "⏳ Wire up the settings screen",
+      "todo": true,
+      "tags": [
+       "P2"
+      ],
+      "source": "examples/demo-project",
+      "detail": {
+       "explain": "This node is linked to a project folder, so its own TODO.md is read live and shown in the detail panel. See examples/demo-project."
+      }
+     },
+     {
+      "id": "sp-2",
+      "topic": "🎯 Reach a usable first version",
+      "kind": "項目",
+      "detail": {
+       "explain": "A milestone, not a task: it is the acceptance condition that the items under it are measured against."
+      }
+     },
+     {
+      "id": "sp-infra",
+      "topic": "🏗️ Local dev server",
+      "kind": "infra",
+      "detail": {
+       "explain": "Infrastructure nodes describe how the system is put together, so the map answers 'what does my setup look like' as well as 'what is left to do'.",
+       "owner": "ai"
+      }
+     },
+     {
+      "id": "sp-sop",
+      "topic": "📐 Release checklist",
+      "kind": "sop",
+      "hyperLink": "examples/demo-project/TODO.md",
+      "detail": {
+       "explain": "Rules and procedures get their own node type, with a link to the document that is the real source of truth."
+      }
+     }
+    ]
+   },
+   {
+    "id": "inbox",
+    "topic": "📥 Inbox",
+    "kind": "項目",
+    "expanded": true,
+    "children": [
+     {
+      "id": "in-1",
+      "topic": "⏳ Look into the export format",
+      "todo": true,
+      "tags": [
+       "P3"
+      ],
+      "detail": {
+       "explain": "還沒寫為什麼要做"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "arrows": [
+  {
+   "id": "ex-arrow-1",
+   "label": "feeds into",
+   "from": "w-2",
+   "to": "sp-1",
+   "delta1": {
+    "x": 240,
+    "y": 40
+   },
+   "delta2": {
+    "x": -180,
+    "y": -60
+   }
+  },
+  {
+   "id": "ex-arrow-2",
+   "label": "blocks",
+   "from": "w-3",
+   "to": "w-1",
+   "delta1": {
+    "x": 200,
+    "y": -30
+   },
+   "delta2": {
+    "x": -200,
+    "y": 30
+   }
+  }
+ ],
+ "summaries": [],
+ "direction": 2,
+ "theme": null,
+ "compact": false
+}

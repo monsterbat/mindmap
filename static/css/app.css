@@ -1,0 +1,443 @@
+* { box-sizing: border-box; }
+body { margin: 0; overflow: hidden; font-family: -apple-system, "PingFang TC", sans-serif; }
+
+/* 第二排:這一頁自己的工具(2026-09-08 從第一排搬下來)。
+   ⛔ 分頁連結與狀態列都不在這裡 —— 那是第一排 nav.js/nav.css 的事。
+   按鈕樣式刻意跟任務板/待辦事項/排行程一致(透明底+邊框),四頁的第二排才長得一樣;
+   ⛔ 舊的實心藍按鈕已經拿掉 —— 8 顆藍色擠一排比第一排的導覽還搶眼。 */
+:root { --tool-h: 40px; }
+#toolbar {
+  height: var(--tool-h); flex: none;
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 12px; background: #191d26; color: #e8eaed;
+  border-bottom: 1px solid #2b3140;
+}
+.sep { flex: none; width: 1px; height: 18px; background: #333a48; margin: 0 3px; }
+#map-select {
+  min-width: 150px; height: 26px; border-radius: 6px; padding: 0 6px;
+  font-size: 13px; border: 1px solid #333a48; background: #151922; color: #e8eaed;
+}
+#toolbar button {
+  height: 26px; padding: 0 10px; font: inherit; font-size: 13px;
+  border: 1px solid #333a48; border-radius: 6px;
+  background: transparent; color: #c3cad6; cursor: pointer; white-space: nowrap;
+}
+#toolbar button:hover { border-color: #6cc0ff; color: #6cc0ff; }
+#btn-save { border-color: #3b5bdb; background: #364fc7; color: #fff; }
+#btn-save:hover { background: #3b5bdb; border-color: #4c6ef5; color: #fff; }
+#hint { flex: 1; text-align: center; font-size: 11.5px; color: #79828f;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1100px) { #hint { display: none; } }
+
+#banner {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: #fff3bf; color: #5c4d00; font-size: 14px;
+}
+#banner[hidden] { display: none; } /* display:flex 會蓋掉 hidden 屬性,要補回來 */
+#banner button {
+  height: 28px; padding: 0 10px; border: 1px solid #b39700;
+  border-radius: 6px; background: #fff; cursor: pointer;
+}
+
+/* 「你這頁的程式是舊的」提示。跟衝突橫幅分開:那個講資料,這個講程式,
+   按鈕做的事完全不同,混在一起會按錯。 */
+#update-bar {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: #1971c2; color: #fff; font-size: 14px;
+}
+#update-bar[hidden] { display: none; } /* 同上,display:flex 會蓋掉 hidden */
+#update-bar button {
+  height: 28px; padding: 0 10px; border: 1px solid #fff;
+  border-radius: 6px; background: #fff; color: #1971c2; font-weight: 600; cursor: pointer;
+}
+
+/* ⛔ 不要再把工具列高度寫死 —— 2026-09-08 拆成兩排時,四個 calc 少改一個就會
+   多出一條捲軸或切掉底部,而且不會報錯。改吃 nav.css 的 --nav-h 與上面的 --tool-h。 */
+#workarea { display: flex; height: calc(100vh - var(--nav-h) - var(--tool-h)); }
+body.has-banner #workarea { height: calc(100vh - var(--nav-h) - var(--tool-h) - 44px); }
+body.has-update #workarea { height: calc(100vh - var(--nav-h) - var(--tool-h) - 44px); }
+body.has-banner.has-update #workarea { height: calc(100vh - var(--nav-h) - var(--tool-h) - 88px); }
+#map { flex: 1; height: 100%; min-width: 0; }
+
+/* 右側詳情抽屜:圖上只留標題,細節寫這裡 */
+/* 使用者反映(2026-08-07):「說明的字太多,整個版面超級龐大,沒辦法一頁看完還要滾輪」。
+   欄位說明縮成一行(完整說明搬進 title,滑過去才出現),間距與 textarea 一起收。 */
+#drawer {
+  width: 380px; flex: none; height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px; padding: 12px;
+  background: #1f2430; color: #e8eaed; border-left: 1px solid #333a48;
+}
+#drawer[hidden] { display: none; }
+#drawer-head { display: flex; align-items: center; gap: 8px; }
+#drawer-title { flex: 1; font-weight: 700; font-size: 14px; line-height: 1.4; }
+#drawer-close, #detail-clear {
+  border: 1px solid #4a5468; background: transparent; color: #9aa4b2;
+  border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer;
+}
+#drawer-close:hover, #detail-clear:hover { border-color: #ff6b6b; color: #ff8787; }
+
+.drawer-field { display: flex; flex-direction: column; gap: 4px; }
+/* 提示字要比真的內容淡很多 —— 使用者反映(2026-08-07):「看起來很像是上面已經有字了」。
+   瀏覽器預設的 placeholder 只比正文淡一點,在深色底上幾乎分不出來。 */
+#drawer ::placeholder { color: #626b7a; }
+/* 專案自己的待辦(即時拉來的,不在圖上) */
+.src-items { margin: 6px 0 0; padding-left: 16px; font-size: 12px; color: #c3cbd8; }
+.src-items li { margin: 2px 0; line-height: 1.5; }
+.src-items li.waiting { color: #ffd8a8; } /* ⏳ = 球在使用者身上 */
+.src-more { margin-top: 4px; font-size: 11px; color: #8b94a3; }
+#chips-priority[hidden] { display: none; } /* .chip-row 是 flex,會蓋掉 hidden */
+/* 少用的欄位收進「進階」——它們一個節點設一次就不再動,卻佔掉兩塊版面。
+   節點本身有設值時 renderDrawer 會自動展開,不會藏起「已經有東西」的欄位。 */
+#drawer-more { display: flex; flex-direction: column; gap: 9px; }
+#drawer-more > summary {
+  cursor: pointer; font-size: 12px; color: #9aa4b2; list-style: none;
+  padding: 3px 0; user-select: none;
+}
+#drawer-more > summary::before { content: "▸ "; }
+#drawer-more[open] > summary::before { content: "▾ "; }
+#drawer-more > summary:hover { color: #c8d0dc; }
+.drawer-field > span { font-size: 13px; font-weight: 600; }
+.drawer-field small { display: block; font-weight: 400; font-size: 11px; color: #9aa4b2; margin-top: 1px; }
+.drawer-field textarea {
+  min-height: 72px; resize: vertical; padding: 7px; border-radius: 6px;
+  border: 1px solid #3b4354; background: #151922; color: #e8eaed;
+  font: inherit; font-size: 13px; line-height: 1.6;
+}
+.drawer-field textarea:focus { outline: none; border-color: #4c6ef5; }
+#drawer-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+#drawer-hint { flex: 1; font-size: 11px; color: #9aa4b2; }
+
+/* 狀態 / 優先序切換鈕 */
+.chip-row { display: flex; flex-wrap: wrap; gap: 4px; }
+/* 「要花多久」有八檔,使用者要求塞在一行 —— 收窄內距、不換行 */
+#chips-effort { flex-wrap: nowrap; gap: 3px; }
+.chip.mini { padding: 2px 4px; letter-spacing: -.2px; }
+.chip {
+  padding: 2px 8px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  border: 1px solid #3b4354; border-radius: 999px;
+  background: #151922; color: #c8cdd6;
+}
+.chip:hover:not(:disabled) { border-color: #4c6ef5; }
+.chip.on { background: #4c6ef5; border-color: #4c6ef5; color: #fff; }
+.chip:disabled { opacity: .4; cursor: default; }
+
+/* 自由標籤 */
+#tag-editor { display: flex; flex-direction: column; gap: 5px; }
+#tag-list:empty { display: none; }
+.chip.tag { background: #2b2f3c; border-color: #4a5468; }
+.chip.tag:hover { border-color: #ff8787; color: #ff8787; }
+#tag-input {
+  padding: 5px 7px; font: inherit; font-size: 12px;
+  border: 1px solid #3b4354; border-radius: 5px; background: #151922; color: #e8eaed;
+}
+#tag-input:focus { outline: none; border-color: #4c6ef5; }
+
+#src-input {
+  padding: 5px 7px; font: inherit; font-size: 12px;
+  border: 1px solid #3b4354; border-radius: 5px; background: #151922; color: #e8eaed;
+}
+#src-input:focus { outline: none; border-color: #4c6ef5; }
+#src-input:disabled { opacity: .4; }
+#src-status { font-size: 11px; color: #8ce99a; }
+#src-status:empty { display: none; }
+#src-status.bad { color: #ff8787; }
+#src-status.warn { color: #ffa94d; } /* 太久沒對帳 */
+
+.date-row { display: flex; align-items: center; gap: 6px; }
+#detail-due {
+  flex: 1; min-width: 0; padding: 4px 7px; font: inherit; font-size: 12px;
+  border: 1px solid #3b4354; border-radius: 5px; background: #151922; color: #e8eaed;
+  color-scheme: dark; /* 讓瀏覽器原生的日期選擇器也是深色,不然會跳出一片白 */
+}
+#detail-due:focus { outline: none; border-color: #4c6ef5; }
+#due-clear {
+  flex: none; padding: 4px 9px; font-size: 12px; cursor: pointer;
+  border: 1px solid #4a5468; border-radius: 5px; background: #2b2f3c; color: #c8cdd6;
+}
+#due-clear:hover:not(:disabled) { border-color: #ff8787; color: #ff8787; }
+#due-clear:disabled, #detail-due:disabled { opacity: .4; cursor: default; }
+
+#link-select {
+  padding: 5px 7px; font: inherit; font-size: 12px;
+  border: 1px solid #3b4354; border-radius: 5px; background: #151922; color: #e8eaed;
+}
+#link-select:focus { outline: none; border-color: #4c6ef5; }
+#link-select:disabled { opacity: .4; }
+
+/* 關聯清單:← 誰餵給我、⇄ 雙向、→ 我餵給誰。上排點了跳過去,下排就地改。
+   線關掉的時候這裡是唯一入口,所以樣式要看得出「這是可以點的」。
+   一列兩排是刻意的:面板只有 380px 寬,擠成一排的話標籤輸入框會小到打不了字。 */
+#rel-field[hidden] { display: none; } /* .drawer-field 是 flex,會蓋掉 hidden */
+#rel-list { display: flex; flex-direction: column; gap: 6px; }
+.rel-row {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 6px 7px; border: 1px solid #3b4354; border-radius: 5px; background: #151922;
+}
+.rel-go {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 0; border: none; background: none; color: #e8eaed;
+  font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+}
+.rel-go:hover:not(:disabled) .rel-name { text-decoration: underline; }
+.rel-go:disabled { opacity: .45; cursor: default; }
+.rel-dir { flex: none; color: #ff8787; font-weight: 700; }
+.rel-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.rel-tools { display: flex; align-items: center; gap: 4px; }
+.rel-label {
+  flex: 1; min-width: 0; padding: 3px 6px; font: inherit; font-size: 11px;
+  border: 1px solid #3b4354; border-radius: 4px; background: #0f1319; color: #ffc9c9;
+}
+.rel-label:focus { outline: none; border-color: #4c6ef5; }
+.rel-btn {
+  flex: none; width: 27px; padding: 3px 0; font-size: 12px; cursor: pointer;
+  border: 1px solid #4a5468; border-radius: 4px; background: #2b2f3c; color: #c8cdd6;
+}
+.rel-btn:hover:not(:disabled) { border-color: #ff8787; color: #ff8787; }
+.rel-btn.on { background: #ff6b6b; border-color: #ff6b6b; color: #fff; } /* 雙向:亮起來 */
+.rel-btn:disabled { opacity: .35; cursor: default; }
+
+/* ── 待辦節點 ────────────────────────────────────────────
+   使用者 2026-08-03 反映:待辦躲在面板最下面「沒有這麼的直觀」→ 待辦本身就是節點,
+   拉一條線出來,而且要一眼認得出來:**文字藍色 + 線是藍虛線**。
+   ⚠️ 刻意不加 !important:使用者自己設的字色是 inline style,會蓋過這一條 ——
+   系統給的是「預設長相」,不是搶走使用者的控制權(設計原則一)。 */
+/* ⚠️ 要 .map-container 前綴才蓋得過引擎的 `.map-container me-parent me-tpc{color:var(--color)}`
+   (權重 0,2,1 > 0,1,2);少了前綴顏色會被吃掉。 */
+.map-container me-tpc[data-todo] { color: #4dabf7; }
+path[data-nodeid].todo-line { stroke: #4dabf7; stroke-dasharray: 6 5; }
+
+/* 整批藏起來(專心看結構時)。連它的線一起藏,不然會留下一截接到空氣的線。
+   me-wrapper 藏掉 = 整個子樹一起藏,而且不佔版面,排版會自然收攏。 */
+body.hide-todos me-wrapper:has(> me-parent > me-tpc[data-todo]) { display: none; }
+body.hide-todos path[data-nodeid].todo-line { display: none; }
+
+/* ── 圖層 ─────────────────────────────────────────────
+   一張圖裝下任務+腦袋架構+電腦架構+規則,靠圖層分流(使用者 2026-08-04 的需求:
+   「拆開我要分三個地方看會更混亂」)。每層跟待辦同一套藏法:
+   節點藏 wrapper(整個子樹+版面自然收攏),線藏對應的 *-line class。 */
+body.hide-done me-wrapper:has(> me-parent > me-tpc[data-done]) { display: none; }
+body.hide-done path[data-nodeid].done-line { display: none; }
+body.hide-sop me-wrapper:has(> me-parent > me-tpc[data-kind="sop"]),
+body.hide-sop me-wrapper:has(> me-parent > me-tpc[data-kind="tool"]) { display: none; }
+body.hide-sop path[data-nodeid].sop-line,
+body.hide-sop path[data-nodeid].tool-line { display: none; }
+body.hide-infra me-wrapper:has(> me-parent > me-tpc[data-kind="infra"]) { display: none; }
+body.hide-infra path[data-nodeid].infra-line { display: none; }
+/* AI 圈圈層只藏圈,節點還在。:not([data-due]) = 快到期的紅/橘框照亮,不能被這層吃掉 */
+body.hide-ai me-tpc[data-ai]:not([data-due]) { outline: none; }
+
+/* SOP 路標(紫)與設施(綠):跟待辦的藍同一套邏輯 —— 系統給「預設長相」,
+   不加 !important,使用者自己設的 inline 顏色照樣蓋得過(設計原則一)。 */
+.map-container me-tpc[data-kind="sop"] { color: #b197fc; }
+path[data-nodeid].sop-line { stroke: #b197fc; stroke-dasharray: 2 5; }
+.map-container me-tpc[data-kind="infra"] { color: #38d9a9; }
+/* 工具(skill/指令):黃。跟規則同屬「文件類路標」,共用 hide-sop 圖層,只用顏色分 */
+.map-container me-tpc[data-kind="tool"] { color: #fab005; }
+path[data-nodeid].tool-line { stroke: #fab005; stroke-dasharray: 2 5; }
+path[data-nodeid].infra-line { stroke: #38d9a9; }
+
+#layers-wrap { position: relative; }
+#btn-layers.off { background: #e8590c; } /* 有圖層被藏=現在不是全貌,亮橘提醒 */
+#layer-panel {
+  position: absolute; top: 36px; left: 0; z-index: 60; min-width: 230px;
+  display: flex; flex-direction: column; gap: 2px; padding: 8px;
+  background: #1f2430; border: 1px solid #4a5468; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+#layer-panel[hidden] { display: none; }
+.layer-row {
+  display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 7px;
+  padding: 5px 7px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #e8eaed;
+}
+.layer-row:hover { background: #2b2f3c; }
+.layer-row small { color: #9aa4b2; font-size: 11px; text-align: right; }
+.layer-row input { accent-color: #4c6ef5; }
+
+/* ── 搜尋 ───────────────────────────────────────────── */
+#search-wrap { position: relative; }
+#search-box {
+  width: 190px; height: 30px; padding: 0 9px; font: inherit; font-size: 12px;
+  border: 1px solid #3b4354; border-radius: 6px; background: #151922; color: #e8eaed;
+}
+#search-box:focus { outline: none; border-color: #4c6ef5; width: 260px; }
+#search-list {
+  position: absolute; top: 36px; left: 0; z-index: 60; min-width: 300px; max-width: 420px;
+  display: flex; flex-direction: column; padding: 5px;
+  background: #1f2430; border: 1px solid #4a5468; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+#search-list[hidden] { display: none; }
+.search-row {
+  display: flex; align-items: baseline; gap: 8px; padding: 6px 8px;
+  border: none; border-radius: 6px; background: none; color: #e8eaed;
+  font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+}
+.search-row:hover, .search-row.active { background: #2b3f6e; }
+.search-topic { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-row small { flex: none; color: #9aa4b2; font-size: 10px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* AI 圈圈檢查器:紫色系跟圈圈同色,看到按鈕就知道在講那些圈 */
+#btn-ai-next { background: #9c36b5; }
+#btn-ai-next:hover { background: #862e9c; }
+
+/* ── AI 改過的圈圈 ──────────────────────────────────────
+   使用者的需求(2026-08-03):「加個圈把你修正的區塊圈起來,我檢查沒問題就把圈拿掉」。
+   用 dashed outline:跟截止日的實線框分得開,而且不佔版面。 */
+me-tpc[data-ai] { outline: 2px dashed #cc5de8; outline-offset: 3px; }
+#drawer-ai {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 12px; color: #eebefa; background: #2b1f33;
+  border: 1px solid #5f3d6b; border-radius: 6px; padding: 6px 8px;
+}
+#drawer-ai[hidden] { display: none; }
+#drawer-ai button {
+  font-size: 12px; padding: 3px 8px; cursor: pointer;
+  border: 1px solid #7d4b8c; border-radius: 5px; background: #3d2b47; color: #f3d9fa;
+}
+#drawer-ai button:hover { background: #4d3757; }
+
+#todo-add {
+  margin-top: 6px; padding: 5px; font-size: 12px; cursor: pointer;
+  border: 1px dashed #4a5468; border-radius: 6px; background: transparent; color: #91a7ff;
+}
+#todo-add:hover:not(:disabled) { border-color: #4dabf7; color: #4dabf7; }
+#todo-add:disabled { opacity: .4; cursor: default; }
+
+#drawer-rollup {
+  font-size: 12px; color: #ffd8a8; background: #2b2f3c;
+  border: 1px solid #3b4354; border-radius: 6px; padding: 6px 8px;
+}
+#drawer-rollup[hidden] { display: none; }
+
+/* 「待辦都做完了,節點狀態要不要跟著標?」——只提示,按了才動 */
+#drawer-suggest {
+  margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 12px; color: #b2f2bb; background: #22301f;
+  border: 1px solid #3f5a3a; border-radius: 6px; padding: 6px 8px;
+}
+#drawer-suggest[hidden] { display: none; }
+#drawer-suggest button {
+  font-size: 12px; padding: 3px 8px; cursor: pointer;
+  border: 1px solid #4f7a48; border-radius: 5px; background: #2d4429; color: #d3f9d8;
+}
+#drawer-suggest button:hover { background: #3a5734; }
+
+/* ── 節點上的記號一律排同一行 ────────────────────────────────
+   使用者的需求(2026-08-03):「我要他一行就完成所有的內容」。原本是三行,因為引擎把 tags 畫成
+   `<div class="tags">`——**div 是區塊元素,一定自己占一行**,徽章的 ::after 又排在它後面。
+   把 .tags 改成 inline,標題／等級／自由標籤／徽章就全部流在同一行。 */
+/* me-tpc 改成 inline-flex 有兩個作用:①tags 這個 div 不再自己占一行
+   ②可以用 order 排順序 —— 一個元素只有 ::before(前)跟 ::after(後)兩個位置,
+   但關聯紅牌跟統計徽章「都」要在後面(使用者 2026-08-03:「放在前面很怪」),
+   只好讓 ::before 用 order 跳到最後。flex-wrap 留著,標題太長還是要折得下去。 */
+.map-container me-tpc { display: inline-flex; flex-wrap: wrap; align-items: center; }
+me-tpc > .tags span { margin: 0 0 0 5px; vertical-align: middle; }
+
+/* P1–P4 換成紅橘黃灰。引擎預設全是同一種藍底,四個等級長得一模一樣=看了等於沒看,
+   而且跟徽章的 🔴🟠🟡⚪ 對不起來。data-p 由 app.js 的 markPriorityTags 標上去
+   (CSS 選不到文字內容)。自由標籤維持引擎預設的藍底,一眼分得出「等級 vs 標籤」。 */
+me-tpc > .tags span[data-p="P1"] { background: #ffc9c9; color: #a61e1e; font-weight: 700; }
+me-tpc > .tags span[data-p="P2"] { background: #ffd8a8; color: #a15c00; font-weight: 700; }
+me-tpc > .tags span[data-p="P3"] { background: #ffec99; color: #8a6d00; font-weight: 700; }
+me-tpc > .tags span[data-p="P4"] { background: #dee2e6; color: #495057; }
+
+/* 紅牌 ⇄n = 這個節點連著幾條關聯線。原本用 🔗n,使用者反映「有點太不顯眼」→ 給紅底
+   (跟關聯線同色);位置在最後面(order:9),使用者反映「放在前面很怪」。 */
+me-tpc[data-rel]::before {
+  content: attr(data-rel);
+  order: 9; /* ::before 天生在最前面,靠 flex order 把它排到所有東西後面 */
+  font-size: 11px; font-weight: 700; margin-left: 6px;
+  background: #ff6b6b; color: #fff; border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
+
+/* 統計徽章:📝=有詳情、🔴3=底下還有 3 件 P1 沒做(由 app.js 算好寫進 data-badges) */
+me-tpc[data-badges]::after {
+  content: attr(data-badges);
+  order: 8; /* 排在紅牌前面:先講工作量,最後才是關聯 */
+  font-size: 11px; margin-left: 5px; opacity: .9; white-space: nowrap;
+}
+
+/* 快到期就把整個節點框起來。徽章上那行 ⏰8/13 字太小,掃全圖時看不到;
+   框才掃得到 —— 這正是「哪件事快到期」這個問題要的答案。
+   臨界值照 Workspace 的判準:**剩 ≤3 天(含逾期)= 緊急** → 紅;4–7 天 → 橘。
+   ⚠️ 只用 outline(不佔版面、不會跟段落框打架),不碰節點的字色與字級。 */
+me-tpc[data-due="soon"] { outline: 2px solid #ff6b6b; outline-offset: 2px; }
+me-tpc[data-due="near"] { outline: 2px solid #ffa94d; outline-offset: 2px; }
+
+/* 連到別張圖的節點:整個節點都點得下去(app.js 接的),所以要看起來就像連結。
+   引擎硬寫死只畫一個很小的 🔗 —— 使用者反映「我哪知道要點後面的🔗」→ 換成看得懂的膠囊。
+   ⚠️ 只動底線與那顆膠囊,不碰節點的字色與字級(那是使用者自己的樣式)。 */
+me-tpc:has(> .hyper-link) {
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+}
+me-tpc > .hyper-link { font-size: 0; margin-left: .4em; } /* 藏掉引擎寫死的 🔗 */
+me-tpc > .hyper-link::after {
+  content: "開啟 ↗";
+  font-size: 11px; font-weight: 700; vertical-align: middle;
+  background: #4c6ef5; color: #fff; border-radius: 999px; padding: 1px 8px; white-space: nowrap;
+}
+me-tpc > .hyper-link:hover::after { background: #3b5bdb; }
+
+/* 外觀模式關著時,藏起引擎自己的顏色/字級面板:點節點只出詳情,畫面才不亂 */
+body:not(.style-mode) .node-menu { display: none !important; }
+#btn-style-mode.on { background: #f08c00; }
+#btn-arrows.focus { background: #0ca678; }               /* 聚焦=綠 */
+#btn-arrows.off { background: #495057; opacity: .75; }   /* 全關=灰,一眼看得出線被藏起來 */
+
+/* 關聯線「全關」。三層都要藏:線本體、拖曳控制點、線上的文字標籤。
+   ⚠️ 只藏 data-type="arrow" 的標籤,摘要(summary)的標籤不受影響。 */
+body.arrows-off .topiclinks,
+body.arrows-off .linkcontroller,
+body.arrows-off .circle,
+body.arrows-off .svg-label[data-type="arrow"] { display: none; }
+/* .circle = 選取關聯線後那兩顆可拖曳的控制點(引擎裡的 P2/P3)。
+   選著線的時候按隱藏,不一起藏的話會留兩顆孤兒圓點在畫布上。 */
+
+/* 關聯線「聚焦」:只留 app.js 依目前選取節點標上的 .arrow-on。
+   線一多全開就沒有可讀性(使用者 2026-08-03:「拉來拉去會非常的亂」),
+   改成點到哪個節點才亮哪幾條 —— 順著點就能把一整條資料流走完。
+   ⚠️ 控制點不藏:亮著的那條線照樣要點得到、拉得彎。 */
+body.arrows-focus .topiclinks g[data-linkid]:not(.arrow-on),
+body.arrows-focus .svg-label[data-type="arrow"]:not(.arrow-on) { display: none; }
+
+/* 從關聯清單跳過來時閃一下 —— 大圖上不閃根本看不出游標跑到哪去了。
+   ⚠️ 只碰 outline,不碰顏色與字級:那些是使用者自己設的樣式(設計原則一)。 */
+@keyframes mm-jump-flash {
+  0%, 100% { outline-color: transparent; }
+  20%, 60% { outline-color: #ffd43b; }
+}
+me-tpc.mm-jumped {
+  outline: 3px solid transparent; outline-offset: 3px;
+  animation: mm-jump-flash 1.4s ease-in-out;
+}
+
+/* 段落框:第二層以下「有子項的節點」自動加框(視覺上=一個段落標題,使用者要求)。
+   ⚠️ 只給邊框和內距,**不碰顏色與字級**——碰了就會蓋掉使用者自己設的,
+   而且使用者清不掉(曾經出過的問題,見 CHANGELOG 2026-08-02)。 */
+me-main me-children me-parent:has(+ me-children) > me-tpc {
+  border: 1.5px solid var(--panel-border-color, #b8c2d9);
+  border-radius: 10px;
+  padding: 3px 10px;
+}
+
+/* node-menu 補上的「清除」按鈕列——原生面板只能換色不能清空 */
+.node-menu .mm-clear-row {
+  display: flex; gap: 6px; margin: 8px 0 2px;
+}
+.node-menu .mm-clear-row button {
+  flex: 1; padding: 4px 0; font-size: 11px; cursor: pointer;
+  border: 1px solid #adb5bd; border-radius: 5px;
+  background: #fff; color: #495057;
+}
+.node-menu .mm-clear-row button:hover { border-color: #4c6ef5; color: #4c6ef5; }
+
+/* ⛔ 這裡曾經有一條 .rule-note:「topic 開頭是 📏 就自動套便條外觀」。
+   2026-08-02 移除——它跑在 3 秒計時器上,會在使用者沒要求的時候改掉字級/斜體/邊框,
+   清掉又自己回來,而且介面上關不掉。便條外觀改成面板按鈕寫進節點自己的 style。
+   **不要再加任何「自動改外觀」的 CSS 規則。** */
+
+/* 右下角「＋」(nav.css)固定蓋在畫面角落 → 詳情面板底下多留 72px,
+   捲到底時最後那顆按鈕才不會被它擋住(2026-09-17)。 */
+#drawer { padding-bottom: 72px; }

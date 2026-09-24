@@ -1,0 +1,5 @@
+{
+ "_readme": "Written by the calendar fetcher. Events only block time; they never become todo items.",
+ "fetched": null,
+ "events": []
+}

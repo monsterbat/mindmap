@@ -1,0 +1,146 @@
+/* 任務板:同一份心智圖 JSON 的第二個視圖。
+   使用者的需求(2026-08-08):「我們可以把任務狀況…還沒做/正在做/已完成…做成任務卡片讓我們去檢視,
+   也可以分成不同的等級、不同的截止日去做排序。」
+   ⛔ 這頁不是另一份資料 —— 它讀寫的就是那張圖,改狀態會即時寫回去。 */
+:root {
+  color-scheme: dark;
+  --bg: #14161b; --panel: #1f2430; --line: #333a48;
+  --text: #e8eaed; --dim: #9aa4b2;
+  --p1: #ff6b6b; --p2: #ffa94d; --p3: #ffd43b; --p4: #868e96;
+  --blue: #4dabf7; --green: #38d9a9; --purple: #b197fc;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; height: 100vh; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text);
+  font: 14px/1.6 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+}
+
+/* 第二排:這一頁自己的工具。⛔ 分頁連結不在這裡 —— 那是第一排 nav.css 的事。
+   左邊放篩選、右邊放搜尋(四頁同一條規則,2026-09-08 定案)。 */
+#bar {
+  flex: none;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 7px 12px; background: #191d26; border-bottom: 1px solid var(--line);
+}
+.sep { flex: none; width: 1px; height: 18px; background: var(--line); margin: 0 2px; }
+#bar select, #bar input[type="search"] {
+  font: inherit; font-size: 13px; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: #151922; color: var(--text);
+}
+#bar input[type="search"] { width: 190px; margin-left: auto; }  /* ⛔ 搜尋一律靠最右 */
+#onlymine { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 4px; }
+/* ⚠️ #status 現在住在第一排(nav.js 生的),樣式在 nav.css。 */
+
+#cols {
+  flex: 1; display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 10px; padding: 10px 12px 18px; overflow: auto;
+}
+@media (max-width: 900px) { #cols { grid-template-columns: 1fr 1fr; } }
+
+.col { display: flex; flex-direction: column; min-width: 0; }
+.col h2 {
+  margin: 0 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .5px;
+  padding: 6px 8px; border-radius: 7px; background: var(--panel);
+  border: 1px solid var(--line); display: flex; align-items: center; gap: 6px;
+}
+.col h2 .n { margin-left: auto; color: var(--dim); font-weight: 400; }
+.col-list { display: flex; flex-direction: column; gap: 7px; }
+
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-left-width: 3px;
+  border-radius: 8px; padding: 8px 10px; cursor: default;
+}
+.card.p-P1 { border-left-color: var(--p1); }
+.card.p-P2 { border-left-color: var(--p2); }
+.card.p-P3 { border-left-color: var(--p3); }
+.card.p-P4 { border-left-color: var(--p4); }
+.card .t { font-size: 13.5px; line-height: 1.45; }
+.card .path { margin-top: 3px; font-size: 11px; color: var(--dim); }
+.card .meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tag {
+  font-size: 11px; padding: 1px 6px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+}
+.tag.pri { border-color: currentColor; }
+.tag.pri.P1 { color: var(--p1); } .tag.pri.P2 { color: var(--p2); }
+.tag.pri.P3 { color: var(--p3); } .tag.pri.P4 { color: var(--p4); }
+.tag.due.soon { color: var(--p1); border-color: currentColor; }
+.tag.due.near { color: var(--p2); border-color: currentColor; }
+.tag.win { color: var(--purple); border-color: currentColor; }
+.tag.group { color: var(--green); border-color: currentColor; }
+
+/* ── 可以改的三格(2026-08-11 加)──
+   使用者反映:「它卻死在那邊什麼都動不了,那我要它幹嘛?」在那之前卡片是唯讀的。 */
+.card { cursor: grab; }
+.card.dragging { opacity: .45; cursor: grabbing; }
+.col-list.over {
+  outline: 2px dashed var(--blue); outline-offset: 3px; border-radius: 8px;
+  min-height: 46px;
+}
+.card .edit { margin-top: 7px; display: flex; flex-direction: column; gap: 4px; }
+.card .edit .row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.card .edit .f { display: flex; align-items: center; gap: 3px; font-size: 11px; }
+.card .edit input[type="date"], .card .edit select {
+  font: inherit; font-size: 11px; padding: 1px 4px; color: var(--text);
+  background: transparent; border: 1px solid var(--line); border-radius: 5px;
+}
+.card .edit input[type="date"]:hover, .card .edit select:hover { border-color: var(--blue); }
+.card .edit input[type="date"] { color-scheme: dark; }
+.pri-btn {
+  font: inherit; font-size: 11px; padding: 1px 7px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--dim);
+}
+.pri-btn.on.P1 { color: var(--p1); border-color: currentColor; background: #3a1f26; }
+.pri-btn.on.P2 { color: var(--p2); border-color: currentColor; background: #3a2f1f; }
+.pri-btn.on.P3 { color: var(--p3); border-color: currentColor; background: #38381f; }
+.pri-btn.on.P4 { color: var(--p4); border-color: currentColor; background: #2c3138; }
+.pri-btn:hover { border-color: var(--blue); }
+.lock {
+  font: inherit; font-size: 11px; padding: 0 4px; cursor: pointer; line-height: 1.5;
+  border: 1px solid var(--line); border-radius: 5px; background: transparent;
+}
+.lock.on { border-color: var(--p2); }
+.lock:hover { border-color: var(--blue); }
+.card .edit .left { font-size: 11px; color: var(--dim); margin-left: auto; }
+.card .edit .left.over { color: var(--p1); }
+.card .edit .left.soon { color: var(--p1); }
+.card .edit .left.near { color: var(--p2); }
+
+.card .acts { margin-top: 7px; display: flex; gap: 4px; flex-wrap: wrap; }
+.card .acts button {
+  font: inherit; font-size: 11px; padding: 2px 7px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--dim);
+}
+.card .acts button:hover { border-color: var(--blue); color: var(--blue); }
+.card .acts button.go { margin-left: auto; }
+.empty { font-size: 12px; color: var(--dim); padding: 6px 8px; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  background: #22303f; border: 1px solid var(--blue); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; font-size: 13px; z-index: 9;
+}
+#toast[hidden] { display: none; }
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f7; --panel: #fff; --line: #d5d9e0;
+    --text: #1d1f24; --dim: #5a6472;
+    --p1: #c92a2a; --p2: #a25603; --p3: #8a6d00; --p4: #6c757d;
+    --blue: #1c62c9; --green: #0b7a5b; --purple: #6b3fbf;
+  }
+  #bar { background: #eceef2; }
+  #bar select, #bar input[type="search"] { background: #fff; }
+}
+
+/* ❌ 不做了 —— 跟改狀態長得不一樣,因為後果不一樣:它會把節點從圖上移走。
+   ⛔ 不要做成紅底大按鈕(誤按代價高),但也不能跟其他按鈕一模一樣。 */
+.acts .drop-btn { color: var(--p1); border-color: var(--p1); opacity: .75; }
+.acts .drop-btn:hover { opacity: 1; }
+
+/* 右下角「＋」會蓋住最右欄最下面那張卡 → 底下多留空(2026-09-17) */
+#cols { padding-bottom: 76px; }

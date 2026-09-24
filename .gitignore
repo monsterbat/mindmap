@@ -1,0 +1,10 @@
+__pycache__/
+*.py[oc]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+
+# 你自己的圖與資料 —— 範例圖在 examples/,正式的圖放在 MINDMAP_MAPS_DIR 指到的地方
+data/
+mindmaps/

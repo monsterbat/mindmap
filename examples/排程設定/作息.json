@@ -1,0 +1,20 @@
+{
+ "_readme": "How many hours a day exist. Capacity comes from here, nowhere else.",
+ "blocks": [
+  {
+   "name": "main",
+   "from": "09:00",
+   "to": "13:00"
+  },
+  {
+   "name": "misc",
+   "from": "14:00",
+   "to": "15:30"
+  },
+  {
+   "name": "lang",
+   "from": "19:00",
+   "to": "23:00"
+  }
+ ]
+}

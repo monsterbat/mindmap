@@ -1,0 +1,442 @@
+/* 🗓 排今天 — 拖拉排程器。
+   使用者的需求(2026-08-11):「我想設計一個更好讓我去做拖拉行程的工具…左邊 24 小時的行程,
+   右邊放目前還沒有排進行程的任務…固定行程拉到左邊後右邊的原始區塊不會消失。」
+
+   ⛔ 這一頁刻意不出現「主線/雜項/語言」—— 使用者反映:「為什麼你要幫我排什麼主線雜項
+   那些東西」。分軌是自動排程的概念,手拖的時候只會礙事。 */
+:root {
+  color-scheme: dark;
+  --bg: #14161b; --panel: #1f2430; --line: #333a48; --line2: #262c38;
+  --text: #e8eaed; --dim: #9aa4b2;
+  --p1: #ff6b6b; --p2: #ffa94d; --p3: #ffd43b; --p4: #868e96;
+  --blue: #4dabf7; --now: #ff6b6b;
+  --min-px: 1.15;       /* 一分鐘幾 px → 1 小時 = 69px,放得下兩三行字 */
+  --hour-h: calc(var(--min-px) * 60px);
+  --col-w: 250px;       /* 一天一欄的寬度。⛔ 不要改成等分,7 欄擠進畫面字就又被切了 */
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; height: 100vh; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text);
+  font: 14px/1.55 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+}
+
+/* 第二排:這一頁自己的工具。⛔ 分頁連結不在這裡 —— 那是第一排 nav.css 的事。 */
+#bar {
+  flex: none;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 7px 12px; background: #191d26; border-bottom: 1px solid var(--line);
+}
+.stepper {
+  color: var(--text); text-decoration: none; font: inherit; font-size: 13px;
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px;
+  background: transparent; cursor: pointer;
+}
+.stepper:hover { border-color: var(--blue); color: var(--blue); }
+.stepper.wide { font-size: 12px; }
+#bar input[type="date"] {
+  font: inherit; font-size: 13px; padding: 3px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: #151922; color: var(--text);
+}
+/* ⚠️ #status 現在住在第一排(nav.js 生的),樣式在 nav.css。 */
+.ctl { font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 4px; }
+.ctl select {
+  font: inherit; font-size: 12px; padding: 2px 5px; border-radius: 6px;
+  border: 1px solid var(--line); background: #151922; color: var(--text);
+}
+.tip { font-size: 11px; color: var(--dim); }
+
+#wrap { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 12px;
+  padding: 10px 12px 18px; overflow: hidden; min-height: 0; }
+@media (max-width: 880px) { #wrap { grid-template-columns: 1fr; overflow: auto; } }
+
+/* ── 左:連續幾天並排成欄,左右捲(使用者的需求:「我想要可以一直往後看看到很多天的,
+      不如就設定為一個禮拜吧」)。
+   ⚠️ 欄寬用固定 min-width 而不是等分 —— 7 欄等分擠進畫面 = 每欄 160px,
+      字又會被切掉,那正是使用者上一版最不滿的地方。寧可讓使用者左右捲。 */
+#left { overflow: auto; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+#week { display: flex; align-items: flex-start; min-width: min-content; }
+
+.gutter { position: sticky; left: 0; z-index: 6; flex: none; width: 52px; background: var(--panel); }
+.gutter > header { border-bottom: 1px solid var(--line); }
+.gutter .grid.ruler { position: relative; background-image: none; }
+.gutter .lbl {
+  position: absolute; right: 6px; transform: translateY(-6px);
+  font-size: 11px; color: var(--dim);
+}
+
+.daycol { flex: 0 0 var(--col-w); border-left: 1px solid var(--line); min-width: 0; }
+.daycol.today { background: rgba(77, 171, 247, .05); }
+/* ⚠️ 欄頭高度只有這一個來源,而且**鐘點欄的欄頭必須一樣高** ——
+   兩邊不一樣高,各欄的時間軸起點就跟左邊的鐘點刻度差了那麼多,
+   畫面看起來「怪怪的但說不出哪裡怪」,而每一格都對到錯的時間。 */
+:root { --head-h: 78px; }
+.daycol > header {
+  position: sticky; top: 0; z-index: 5; height: var(--head-h);
+  display: flex; flex-direction: column; align-items: stretch; padding: 0 8px 3px;
+  background: var(--panel); border-bottom: 1px solid var(--line); font-size: 12px;
+}
+.daycol > header .top { display: flex; align-items: center; gap: 6px; height: 30px; flex: none; }
+.gutter > header {
+  position: sticky; top: 0; z-index: 7; height: var(--head-h); background: var(--panel);
+}
+.daycol.today > header .top { color: var(--blue); }
+.daycol > header .dow { color: var(--dim); font-weight: 400; font-size: 11px; }
+.daycol > header .h { margin-left: auto; color: var(--dim); font-size: 11px; }
+.daycol > header .ov { color: var(--p3); font-size: 10.5px; cursor: help; }
+
+/* 這一天的時間花在哪些分類上(2026-08-17 使用者要的)。
+   ⚠️ 第二版:第一版做成兩欄六格,使用者反映「整個都擠在一起,字都被擠不見了」——
+   250px 的欄位切成兩半,一格只剩 114px,放 emoji+名字+時數當然擠。
+   → 改成**一欄**,一列一類,字有地方站。放不下的不藏進 tooltip(⛔ tooltip 不算看得到),
+     改成看得見的「全部 N 類 ▸」,按下去開面板列全部。
+   ⛔ 固定列數、固定高度:高度一變,各欄的時間軸就對不齊鐘點刻度了。 */
+.tally {
+  flex: 1; display: grid; grid-auto-rows: 14px; gap: 1px;
+  align-content: start; overflow: hidden; cursor: pointer;
+}
+.tally:hover .cell { color: var(--text); }
+.tally .cell {
+  display: flex; align-items: center; gap: 5px; min-width: 0;
+  font-size: 11px; line-height: 14px; color: var(--dim);
+}
+.tally .cell.all .nm { color: var(--blue); }
+.tally .cell i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+/* 任務=方塊、日常=圓點。範本的顏色跟領域的顏色會撞(讀書與 Work 都是 #4dabf7),
+   光看顏色分不出來,形狀是第二道線索。 */
+.tally .cell.daily i { border-radius: 50%; }
+.tally .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tally .mn { margin-left: auto; flex: none; color: var(--text); font-variant-numeric: tabular-nums; }
+.tally .none { font-size: 11px; line-height: 14px; color: var(--dim); }
+
+/* 拖曳中讓欄頭穿透 —— 它蓋著時間軸最上面 74px(約 64 分鐘),
+   不放行的話拖到那一段完全沒反應、也沒有任何提示。 */
+body.dragging .daycol > header, body.dragging .gutter > header { pointer-events: none; }
+/* 放行了還不夠:欄頭是不透明的,落在它底下的預覽框(z-index 4)會被蓋住 ——
+   「可以放但看不到要放在哪」比不能放更難用。拖曳期間把預覽框抬到欄頭之上。 */
+body.dragging .ghost { z-index: 8; }
+.daycol > header .dump {
+  font: inherit; font-size: 11px; line-height: 1; padding: 2px 5px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 5px; background: transparent; color: var(--dim);
+}
+.daycol > header .dump:hover { border-color: var(--p2); color: var(--p2); }
+
+/* 時間線用**背景**畫,不是每小時一個 div。
+   ⚠️ 這是「無限往後滑」的前提:一欄 49 條線 × 60 天 = 近 3000 個 div,
+   捲起來會頓;背景漸層是 0 個節點,捲多遠都一樣順。 */
+.grid {
+  position: relative;
+  background-image:
+    repeating-linear-gradient(to bottom,
+      var(--line) 0 1px, transparent 1px var(--hour-h)),
+    repeating-linear-gradient(to bottom,
+      transparent 0 calc(var(--hour-h) / 2),
+      var(--line2) calc(var(--hour-h) / 2) calc(var(--hour-h) / 2 + 1px),
+      transparent calc(var(--hour-h) / 2 + 1px) var(--hour-h));
+}
+
+.blk {
+  position: absolute; left: 3px; right: 5px; overflow: hidden;
+  border-radius: 7px; padding: 3px 6px 3px 8px; cursor: grab;
+  border: 1px solid currentColor; border-left-width: 4px;
+  background: #232a37; z-index: 2;
+}
+.blk.dragging { opacity: .4; cursor: grabbing; }
+.blk .ttl {
+  font-size: 12.5px; color: var(--text); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.blk .sub { font-size: 10px; color: var(--dim); display: flex; gap: 5px; flex-wrap: wrap; }
+.blk .sub .late { color: var(--p1); }
+.blk .grip { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; cursor: ns-resize; }
+.blk .grip::after {
+  content: ""; position: absolute; left: 50%; bottom: 2px; width: 22px; height: 2px;
+  transform: translateX(-50%); background: currentColor; opacity: .5; border-radius: 2px;
+}
+.blk .x {
+  position: absolute; top: 1px; right: 3px; font-size: 11px; line-height: 1;
+  color: var(--dim); cursor: pointer; background: none; border: 0; padding: 2px 3px;
+}
+.blk .x:hover { color: var(--p1); }
+.blk .pen {
+  position: absolute; top: 1px; right: 20px; font-size: 11px; line-height: 1;
+  color: var(--dim); cursor: pointer; background: none; border: 0; padding: 2px 3px;
+}
+.blk .pen:hover { color: var(--blue); }
+.blk.short { padding-top: 1px; padding-bottom: 1px; }
+.blk.short .ttl { -webkit-line-clamp: 1; font-size: 11.5px; }
+.blk.short .sub { display: none; }
+
+.now { position: absolute; left: 0; right: 0; height: 2px; background: var(--now); z-index: 5; }
+.now::before {
+  content: "現在"; position: absolute; right: 4px; top: -13px;
+  font-size: 10px; color: var(--now); background: var(--panel); padding: 0 3px;
+}
+.grid.drop-on { background: rgba(77, 171, 247, .07); }
+.ghost {
+  position: absolute; left: 3px; right: 5px; z-index: 4; pointer-events: none;
+  border: 1px dashed var(--blue); border-radius: 7px; background: rgba(77, 171, 247, .12);
+  font-size: 10.5px; color: var(--blue); padding: 1px 6px;
+}
+/* 疊在一起是刻意允許的(使用者:「有時候確實會同時處理不同的事情」),所以不是紅色警告,
+   只是換個顏色提醒「這裡會變成並排」。 */
+.ghost.stacked { border-color: var(--p3); background: rgba(255, 212, 59, .12); color: var(--p3); }
+/* 並排到三欄以上就很窄了,字級縮一點、只留一行 */
+.blk.narrow { padding: 2px 4px 2px 6px; }
+.blk.narrow .ttl { -webkit-line-clamp: 2; font-size: 11px; }
+.blk.narrow .sub { font-size: 9.5px; }
+/* 擠成三欄以上就沒地方放兩顆按鈕了。留 ✎ 不留 ✕ —— 面板裡有「從行程拿掉」,
+   藏 ✕ 不會少一條路;藏 ✎ 就等於這一塊又不能編輯了(那正是 2026-08-17 要修的事)。 */
+.blk.narrow .x { display: none; }
+.blk.narrow .pen { right: 2px; }
+
+/* ── 右:任務池 + 日常區塊 ── */
+/* ⛔ 右欄不准整欄捲動:任務池有 96 件,會把「日常」跟「顏色圖例」擠到畫面外,
+   那兩塊看不到 = 日常區塊等於不存在(拖不到),而使用者問過「顏色代表什麼意思」。
+   → 池子自己內捲,日常與圖例永遠釘在下面看得到。 */
+#right { overflow: hidden; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+
+/* 分頁列(使用者 2026-08-18:「像是 Excel 的那一種分頁」)。
+   ⚠️ 一次只顯示一種 → 那一種就拿到整個高度,⛔ 不會再有「東西一多就被切掉」
+   或「五區互相把對方擠扁」的問題。 */
+#tabs { display: flex; flex-wrap: wrap; gap: 4px; flex: none; }
+.tab {
+  font: inherit; font-size: 11.5px; line-height: 1.35; padding: 3px 7px; cursor: pointer;
+  display: flex; align-items: center; gap: 4px; white-space: nowrap;
+  border: 1px solid var(--line); border-bottom-color: transparent;
+  border-radius: 7px 7px 0 0; background: transparent; color: var(--dim);
+}
+.tab:hover { color: var(--text); border-color: var(--blue); }
+.tab.on {
+  color: var(--text); background: var(--panel);
+  border-color: var(--line); border-bottom-color: var(--panel);
+}
+.tab .cnt {
+  font-size: 10px; color: var(--dim); background: var(--line2);
+  border-radius: 999px; padding: 0 4px; min-width: 15px; text-align: center;
+}
+.tab.on .cnt { color: var(--text); }
+.pane { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); padding: 8px 10px; }
+/* 分頁的內容區:一次只有一個沒有 hidden,所以它獨佔整個高度、自己捲。 */
+.pane.grow { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.pane.grow[hidden] { display: none; }
+.pane.grow > div:last-child { overflow: auto; flex: 1; min-height: 0; }
+.pane .hint { margin: 0 0 7px; font-size: 11px; color: var(--dim); }
+
+
+.filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 7px; }
+.filters select, .filters input[type="search"] {
+  font: inherit; font-size: 11.5px; padding: 2px 5px; border-radius: 6px;
+  border: 1px solid var(--line); background: #151922; color: var(--text);
+}
+.filters input[type="search"] { flex: 1; min-width: 90px; }
+.filters .chk { font-size: 11px; color: var(--dim); display: flex; align-items: center; gap: 3px; }
+
+/* 池子裡的編輯列:按「✎」才展開 —— 96 張卡片全部攤開會長到看不完。
+   ⛔ 收起來的時候等級/剩多久/到期日一定要看得見(2026-08-11 出過的問題:
+   把等級藏進編輯列,使用者立刻反應「他其他的東西被擋住了看不太到」)。 */
+.item .edit { display: none; }
+.item .edit.open { display: block; }
+.item .pen {
+  margin-left: auto; font: inherit; font-size: 11px; line-height: 1;
+  padding: 1px 5px; cursor: pointer; color: var(--dim);
+  border: 1px solid transparent; border-radius: 5px; background: transparent;
+}
+.item .pen:hover { color: var(--blue); border-color: var(--line); }
+.item .pen.on { color: var(--blue); border-color: var(--blue); }
+.item .sub .dom { opacity: .8; }
+/* 領域標籤(2026-09-17):字的顏色 = 那個領域的顏色,外框同色,一眼認得出是哪一塊 */
+.item .sub .dtag {
+  border: 1px solid currentColor; border-radius: 4px; padding: 0 5px;
+  white-space: nowrap; font-weight: 600;
+}
+/* 淺色模式:領域色大多是給深色底調的淡色(#ffd8a8、#c0eb75…),直接用在白底上看不見 → 壓暗 */
+@media (prefers-color-scheme: light) {
+  .item .sub .dtag { filter: brightness(.55) saturate(1.4); }
+}
+/* 週期性 / AI 的標記 —— 它們有自己的選單,但拖到行事曆上還是要認得出來 */
+.item .sub .rep, .blk .sub .rep { color: var(--blue); }
+.item .sub .pill.none { color: var(--p4); }
+.item .edit .row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
+.item .edit .f { display: flex; align-items: center; gap: 3px; font-size: 10.5px; }
+.item .edit input[type="date"], .item .edit select {
+  font: inherit; font-size: 10.5px; padding: 1px 3px; color: var(--text);
+  background: transparent; border: 1px solid var(--line); border-radius: 5px;
+}
+.pri-btn, .st-btn {
+  font: inherit; font-size: 10.5px; padding: 1px 6px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--dim);
+}
+.pri-btn:hover, .st-btn:hover { border-color: var(--blue); color: var(--blue); }
+.pri-btn.on.P1 { color: var(--p1); border-color: currentColor; }
+.pri-btn.on.P2 { color: var(--p2); border-color: currentColor; }
+.pri-btn.on.P3 { color: var(--p3); border-color: currentColor; }
+.pri-btn.on.P4 { color: var(--p4); border-color: currentColor; }
+
+/* 「還沒排完」要看得見 —— 不然排進去一段使用者會以為整件事排好了 */
+.rest { color: var(--p3); }
+.blk .sub .rest { color: var(--p3); }
+
+.item {
+  border: 1px solid var(--line); border-left: 4px solid currentColor;
+  border-radius: 7px; padding: 5px 8px; margin-bottom: 5px; cursor: grab;
+  background: #232a37;
+}
+.item.dragging { opacity: .4; cursor: grabbing; }
+.item.ai { cursor: default; opacity: .8; }
+/* 等條件的:重點是「在等什麼」,所以那一行要比等級/時數顯眼 */
+.item.wait { cursor: default; }
+.item.wait .cond { font-size: 11.5px; color: var(--p3); margin: 2px 0 3px; }
+.item.wait .sub .st-btn { margin-left: auto; }
+.item.urgent { box-shadow: inset 0 0 0 1px var(--p1); }
+.item .sub .late { color: var(--p1); }
+.item .ttl { font-size: 12.5px; color: var(--text); line-height: 1.35; }
+.item .sub { font-size: 10.5px; color: var(--dim); display: flex; gap: 6px; flex-wrap: wrap; }
+.pill { border: 1px solid currentColor; border-radius: 999px; padding: 0 5px; white-space: nowrap; }
+.P1 { color: var(--p1); } .P2 { color: var(--p2); } .P3 { color: var(--p3); } .P4 { color: var(--p4); }
+#tpl .item { cursor: grab; }
+.empty { font-size: 11.5px; color: var(--dim); padding: 4px 0; }
+/* 語言學習分頁裡的小節標題(每日積木/週期/單次…) */
+#langlist .sect { margin: 10px 2px 4px; font-size: 11.5px; font-weight: 600; color: var(--dim); }
+#langlist .sect:first-child { margin-top: 2px; }
+
+#legend { display: flex; flex-wrap: wrap; gap: 5px; }
+.key { font-size: 11px; display: flex; align-items: center; gap: 4px; color: var(--dim); }
+.key i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* 排進行事曆之後的浮動編輯面板(按區塊上的 ✎)。
+   使用者的需求(2026-08-17):「排進去之後就不能再編輯了,要先拉回去再拉出來,很麻煩。」
+   ⚠️ 一定要 `position: fixed` 掛在 <body> —— 區塊住在 #left(overflow:auto)裡面,
+   面板長在區塊內的話一超出格子邊界就被裁掉半截。 */
+.pop {
+  position: fixed; z-index: 12; width: 260px;
+  border: 1px solid currentColor; border-left-width: 4px; border-radius: 9px;
+  background: var(--panel); padding: 7px 9px 8px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .5);
+}
+.pop .hd { display: flex; align-items: flex-start; gap: 6px; }
+.pop .hd .who { min-width: 0; }
+/* 「這是誰的事」放在標題上面一行 —— 使用者光看標題不知道那是哪個專案的排版優化 */
+.pop .hd .path {
+  font-size: 10px; line-height: 1.3; color: var(--dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pop .hd b {
+  font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pop .hd .x {
+  margin-left: auto; flex: none; font-size: 11px; line-height: 1; padding: 1px 2px;
+  color: var(--dim); cursor: pointer; background: none; border: 0;
+}
+.pop .hd .x:hover { color: var(--p1); }
+.pop .row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; align-items: center; }
+.pop .f { display: flex; align-items: center; gap: 3px; font-size: 10.5px; color: var(--dim); }
+/* 改名字那一格要吃滿整列 —— 標題通常很長,擠成一小格等於看不到自己在改什麼 */
+.row.name { flex-wrap: nowrap; }
+.row.name > .f { flex: 1; min-width: 0; }
+.rename { width: 100%; min-width: 0; }
+.pop input, .pop select {
+  font: inherit; font-size: 10.5px; padding: 1px 3px; color: var(--text);
+  background: transparent; border: 1px solid var(--line); border-radius: 5px;
+}
+.pop .foot { border-top: 1px solid var(--line2); margin-top: 7px; padding-top: 6px; }
+.pop .note { font-size: 10.5px; color: var(--dim); }
+.pop .foot .st-btn { margin-left: auto; }
+
+/* 「為什麼要做這件事」。長的說明給它捲,⛔ 不要截斷 —— 截斷等於又看不到來由。 */
+.pop .why {
+  margin-top: 6px; padding: 5px 6px; max-height: 132px; overflow: auto;
+  font-size: 10.5px; line-height: 1.5; color: var(--text); white-space: pre-wrap;
+  background: var(--line2); border-radius: 6px;
+}
+.pop .why.empty { color: var(--dim); font-style: italic; }
+
+/* 這天的完整分類(按摘要打開) */
+#sumpop .sumlist { margin-top: 6px; display: grid; grid-auto-rows: 17px; }
+#sumpop .cell { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text); }
+#sumpop .cell i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+#sumpop .cell.daily i { border-radius: 50%; }
+#sumpop .cell .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sumpop .cell .mn { margin-left: auto; flex: none; font-variant-numeric: tabular-nums; }
+#sumpop .sumfoot {
+  margin-top: 7px; padding-top: 6px; border-top: 1px solid var(--line2);
+  font-size: 10.5px; line-height: 1.5; color: var(--dim);
+}
+#sumpop .sumfoot .warn { color: var(--p3); }
+#sumpop .sumfoot .dim2 { opacity: .75; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  background: var(--panel); border: 1px solid var(--blue); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; font-size: 13px; z-index: 9;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .45);
+}
+#toast[hidden] { display: none; }
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f7; --panel: #fff; --line: #d5d9e0; --line2: #e7eaef;
+    --text: #1d1f24; --dim: #5a6472;
+    --p1: #c92a2a; --p2: #a25603; --p3: #8a6d00; --p4: #6c757d;
+    --blue: #1c62c9; --now: #c92a2a;
+  }
+  #bar { background: #eceef2; }
+  #bar input[type="date"] { background: #fff; }
+  .blk, .item { background: #f7f8fa; }
+  .pop { box-shadow: 0 8px 26px rgba(0, 0, 0, .18); }
+  /* ⚠️ 2026-08-17 截圖才看到的:這兩處底色寫死深色而文字用 var(--text),
+     淺色模式下變成深字壓深底 = 整個看不見(領域下拉、排序下拉都中招)。
+     讀 CSS 抓不到這種 bug,一定要真的渲染一次。 */
+  .ctl select, .filters select, .filters input[type="search"] { background: #fff; }
+}
+
+/* ❌ 不做了 —— 後果比改狀態重(節點會離開圖),所以視覺上要分得出來,
+   但⛔ 不做成紅底大按鈕:那會變成畫面上最顯眼的東西,而它是最少用的那個。 */
+.st-btn.drop-btn { color: var(--p1); border-color: var(--p1); opacity: .7; }
+.st-btn.drop-btn:hover { opacity: 1; }
+
+/* 🗓 Google 行事曆卡住的時段(2026-08-22)。⚠️ 一定要跟任務長得不一樣 ——
+   它不能拖、不能刪、不能拉長度,看起來一樣的話使用者會去拖然後發現拖不動。
+   ⛔ 不用實線邊 + 不給游標手勢:虛線 + default 游標就是「這格不歸你管」的訊號。 */
+.blk.cal {
+  cursor: default; border-style: dashed; border-left-style: solid; opacity: .9;
+}
+.blk.cal .ttl { color: var(--dim); }
+.daycol > header .cal-all {
+  font-size: 11px; color: var(--dim); cursor: help;
+  border: 1px dashed var(--line); border-radius: 999px; padding: 0 5px; line-height: 15px;
+}
+
+/* ⏰ 排過去了沒做(2026-08-24)。使用者反映:「為什麼我在心智圖裡面有看到這個項目,
+   但是我在我的排行程卻沒有?」—— 它排滿了時數所以不在「待辦事項」,
+   又躺在過去的日子上所以在畫面外。這一區就是那些東西的唯一出口,
+   ⛔ 所以卡片上一定要有按鈕,不能只是列給使用者看。 */
+.item.stale { box-shadow: inset 0 0 0 1px var(--p3); }
+.item.stale .mini {
+  font: inherit; font-size: 11px; padding: 1px 8px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--dim);
+}
+.item.stale .mini:hover { border-color: var(--blue); color: var(--blue); }
+.item.stale .dim2 { opacity: .7; font-size: 11px; }
+
+/* ✅ 已完成的格子(2026-08-24)。使用者反映:「按下完成任務的時候他就不見了…
+   沒有辦法看到我到底這個東西是什麼時候做完的。」
+   ⛔ 不能跟還沒做的長得一樣:它已經不需要使用者動手了,搶版面就是干擾。
+   → 淡、劃掉、虛線邊、游標不變手勢。 */
+#showdone {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--dim); cursor: pointer; white-space: nowrap;
+}
+/* ⚠️ 2026-09-17 起已完成的也能拖、能開、能拿掉(使用者回報按不動),所以游標不再是 default */
+.blk.done {
+  opacity: .5; border-style: dotted; border-left-style: solid;
+}
+.blk.done:hover { opacity: .8; }
+.blk.done .ttl { text-decoration: line-through; }
+
+/* 右下角「＋」會蓋住右邊清單最下面那張卡的 ✎ → 清單底下多留空(2026-09-17) */
+.pane.grow > div:last-child { padding-bottom: 64px; }

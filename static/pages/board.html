@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>📋 任務板</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+<link rel="stylesheet" href="/static/css/nav.css">
+<link rel="stylesheet" href="/static/css/board.css">
+</head>
+<body>
+<nav id="scnav"></nav>
+
+<header id="bar">
+  <select id="domain"><option value="">全部領域</option></select>
+  <label id="onlymine"><input type="checkbox" id="chk-due"> 只看有死線的</label>
+  <span class="sep"></span>
+  <select id="sort">
+    <option value="pri">排序：等級 → 截止日</option>
+    <option value="due">排序：截止日 → 等級</option>
+  </select>
+  <input id="q" type="search" placeholder="🔍 找任務" autocomplete="off">
+</header>
+
+<main id="cols"></main>
+
+<div id="toast" hidden></div>
+
+<script src="/static/js/config.js"></script>
+<script src="/static/js/nav.js"></script>
+<script src="/static/js/board.js"></script>
+</body>
+</html>

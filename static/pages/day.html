@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🗓 排行程</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗓</text></svg>">
+<link rel="stylesheet" href="/static/css/nav.css">
+<link rel="stylesheet" href="/static/css/day.css">
+</head>
+<body>
+<nav id="scnav"></nav>
+
+<header id="bar">
+  <button id="prev" class="stepper" title="往前一週">◀</button>
+  <input id="date" type="date" title="跳到某一天">
+  <button id="next" class="stepper" title="往後一週">▶</button>
+  <button id="today-btn" class="stepper wide">今天</button>
+  <label id="showdone" title="打開之後,已經標完成的事會用淡色留在原本的時段上，看得到那天做了什麼。
+放 7 天後會自動搬進「完成紀錄」，之後就從那裡查。">
+    <input type="checkbox" id="f-done"> 顯示已完成
+  </label>
+  <span class="tip">一直往右滑就會自動長出後面的日子・按「今天」跳回來・每欄標題的 ↩ ＝ 那天丟回任務池</span>
+</header>
+
+<main id="wrap">
+  <section id="left">
+    <div id="week"></div>
+  </section>
+
+  <!-- 使用者的需求(2026-08-18):「你為什麼不改變一下思維,變成上面有一個像是 Excel 的那一種分頁,
+       我點選不同的分頁會拉出不同的項目,他不但可以讓我整個條狀項目拉得更長,
+       然後又不會讓整個畫面變得太窄…未來東西多的話,他也不會說所有東西全部擠在同一個右邊框框。」
+       → 五疊摺疊區改成分頁:一次只顯示一種,那一種就拿到整個高度。 -->
+  <aside id="right">
+    <nav id="tabs"></nav>
+
+    <section class="pane grow" id="tab-pool">
+      <p class="hint"></p>
+      <div class="filters">
+        <select id="f-domain" title="只看某個領域"><option value="">全部領域</option></select>
+        <select id="f-sort" title="怎麼排">
+          <option value="pri">等級 → 到期日</option>
+          <option value="due">到期日 → 等級</option>
+          <option value="placed">排最多段的先</option>
+          <option value="unplaced">還沒排過的先</option>
+          <option value="topic">照名字</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="f-due"> 有到期日</label>
+        <label class="chk" title="已經放到時間軸上至少一段的">
+          <input type="checkbox" id="f-part"> 已排進行程
+        </label>
+        <input id="f-q" type="search" placeholder="🔍 找任務" autocomplete="off">
+      </div>
+      <div id="pool"></div>
+    </section>
+
+    <section class="pane grow" id="tab-stale" hidden>
+      <p class="hint">排進行程、那天過了、卻沒有標完成的事。<b>它們不在「待辦事項」那一區</b>——
+        那一區只收還沒排進去的額度,而這些已經排滿了,所以兩邊都看不到。
+        處理掉它:標完成、搬到今天、或丟回待辦。</p>
+      <div id="stale"></div>
+    </section>
+
+    <section class="pane grow" id="tab-lang" hidden>
+      <p class="hint">語言學習的讀書排程集中在這裡。先拖 ♾️ 每日積木佔時段,
+        內容照卡片說明讀;週期/單次卡片跟原分頁是同一份,在哪邊操作都一樣。</p>
+      <div id="langlist"></div>
+    </section>
+
+    <section class="pane grow" id="tab-reps" hidden>
+      <p class="hint">做完會再來的事。打勾之後不會被歸檔,會自動推到下一期。</p>
+      <div id="reps"></div>
+    </section>
+
+    <section class="pane grow" id="tab-wait" hidden>
+      <p class="hint">要等某件事發生才做得了的。⛔ 它們不佔待辦事項那一區,
+        條件成立那天跟我說一聲(或按卡片上的「條件成立了」)。</p>
+      <div id="waits"></div>
+    </section>
+
+    <section class="pane grow" id="tab-duty" hidden>
+      <p class="hint">永遠不會完成、但要一直做的事。拖進行程不會消失,跟吃飯運動一樣。</p>
+      <div id="duty"></div>
+    </section>
+
+    <section class="pane grow" id="tab-tpl" hidden>
+      <p class="hint">吃飯、運動、通勤這類固定時段。拖了不會消失。</p>
+      <div id="tpl"></div>
+    </section>
+
+    <section class="pane grow" id="tab-ai" hidden>
+      <p class="hint">AI 在做的事,不佔你的時間。這裡只給你看,不用動它。</p>
+      <div id="aitasks"></div>
+    </section>
+
+    <section class="pane grow" id="tab-legend" hidden>
+      <p class="hint">行程上的顏色代表哪個領域。</p>
+      <div id="legend"></div>
+    </section>
+  </aside>
+</main>
+
+<div id="toast" hidden></div>
+<script src="/static/js/config.js"></script>
+<script src="/static/js/nav.js"></script>
+<script src="/static/js/day.js"></script>
+</body>
+</html>
